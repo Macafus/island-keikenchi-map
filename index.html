@@ -44,9 +44,9 @@
       main { display: flex; flex-direction: column; height: auto; }
       aside { display: contents; }
       .overview, .controls, .definition, .source-note { box-sizing: border-box; width: 100%; }
-      .overview { order: 1; display: grid; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.2fr); gap: 22px; padding: 16px; background: #fff; border-top: 1px solid #d1d5db; }
+      .overview { order: 1; display: grid; grid-template-columns: minmax(165px, 1fr) 104px; gap: 8px; padding: 16px; background: #fff; border-top: 1px solid #d1d5db; }
       .score-panel, .legend-panel { margin: 0; padding: 0; border: 0; }
-      .legend-panel { position: relative; left: 6px; top: 6px; }
+      .legend-panel { justify-self: end; width: 104px; }
       #score { font-size: 25px; white-space: nowrap; }
       .legend { font-size: 12px; gap: 5px; margin-top: 3px; }
       .swatch { width: 11px; height: 11px; }
