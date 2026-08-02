@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>離島経県値マップ</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; color: #1f2937; background: #f8fafc; }
+    header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d1d5db; }
+    h1 { font-size: 20px; margin: 0; }
+    main { display: grid; grid-template-columns: 310px 1fr; height: calc(100vh - 53px); }
+    aside { padding: 16px; overflow-y: auto; background: #fff; border-right: 1px solid #d1d5db; }
+    #map { height: 100%; min-height: 500px; }
+    label { display: block; font-weight: 650; margin: 16px 0 6px; }
+    select, button { box-sizing: border-box; width: 100%; padding: 9px; font: inherit; }
+    button { border: 0; border-radius: 6px; color: #fff; background: #1d4ed8; cursor: pointer; }
+    button:hover { background: #1e40af; }
+    .selected { padding: 10px; border-radius: 6px; background: #f1f5f9; }
+    .summary { margin-top: 20px; padding-top: 14px; border-top: 1px solid #d1d5db; }
+    .summary strong { font-size: 25px; }
+    #score { font-size: 30px; font-weight: 700; line-height: 1.2; }
+    .legend { display: grid; grid-template-columns: 16px 1fr; align-items: center; gap: 7px; margin-top: 6px; font-size: 14px; }
+    .swatch { width: 14px; height: 14px; border: 2px solid #111827; border-radius: 50%; }
+    .note { font-size: 12px; color: #4b5563; line-height: 1.5; }
+    #share { margin-top: 20px; background: #0f766e; }
+    #share:hover { background: #115e59; }
+    dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); border: 0; border-radius: 12px; padding: 0; box-shadow: 0 18px 60px #0006; }
+    dialog::backdrop { background: #0008; }
+    .share-panel { padding: 20px; }
+    .share-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .share-heading h2 { margin: 0; font-size: 20px; }
+    .close { width: auto; background: #64748b; padding: 7px 11px; }
+    #share-map { height: 260px; margin: 16px 0; border: 1px solid #d1d5db; border-radius: 8px; }
+    #share-list { line-height: 1.7; }
+    #share-list h4 { margin: 16px 0 4px; font-size: 16px; }
+    #share-list ul { margin: 0; padding-left: 1.4em; }
+    .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    #share-x { background: #111827; }
+    #copy-url { background: #2563eb; }
+    @media (max-width: 720px) { main { display: block; height: auto; } aside { border-right: 0; border-bottom: 1px solid #d1d5db; } #map { height: 65vh; } }
+  </style>
+</head>
+<body>
+  <header><h1>離島経県値マップ</h1></header>
+  <main>
+    <aside>
+      <label for="prefecture">集計・表示する都道府県</label>
+      <select id="prefecture"><option value="all">全国</option></select>
+
+      <label>選択中の島</label>
+      <div class="selected" id="selected">島の輪郭をクリックしてください</div>
+
+      <label for="status">記録</label>
+      <select id="status" disabled></select>
+      <button id="save" type="button" disabled>この記録を保存</button>
+
+      <section class="summary">
+        <div>点数の合計</div><div id="score">合計 0点 / 0点</div>
+        <div>達成率</div><strong id="progress">0.0%</strong>
+        <div id="count"></div><div id="visited"></div>
+      </section>
+
+      <section class="summary" aria-label="状態の凡例">
+        <div class="legend"><span class="swatch" style="background:#9ca3af"></span><span>未踏（0点）</span></div>
+        <div class="legend"><span class="swatch" style="background:#2563eb"></span><span>寄港（1点）</span></div>
+        <div class="legend"><span class="swatch" style="background:#facc15"></span><span>訪問（2点）</span></div>
+        <div class="legend"><span class="swatch" style="background:#dc2626"></span><span>宿泊（3点）</span></div>
+        <div class="legend"><span class="swatch" style="background:#ec4899"></span><span>居住（4点）</span></div>
+      </section>
+      <button id="share" type="button">地図をシェアする</button>
+      <p class="note">背景地図: 国土地理院 地理院タイル。状態はこのブラウザ内に保存されます。</p>
+      <section class="summary note" aria-label="有人離島の定義">
+        <strong>有人離島の定義</strong><br>
+        離島振興法（255島）、小笠原諸島振興開発特別措置法（2島）、奄美群島振興開発特別措置法（8島）、沖縄振興特別措置法（38島）で対象とされる有人離島の合算（計303島）。
+      </section>
+    </aside>
+    <div id="map" aria-label="離島地図"></div>
+  </main>
+
+  <dialog id="share-dialog" aria-labelledby="share-title">
+    <div class="share-panel">
+      <div class="share-heading"><h2 id="share-title">離島経県値マップ</h2><button class="close" id="close-share" type="button">閉じる</button></div>
+      <div id="share-progress"></div>
+      <div id="share-map" aria-label="共有する地図"></div>
+      <h3>寄港以上の島</h3>
+      <div id="share-list"></div>
+      <div class="share-actions">
+        <button id="share-x" type="button">Xで共有する</button>
+        <button id="copy-url" type="button">URLをコピーする</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="islands-data.js"></script>
+  <script>
+    // islands-data.js の window.islandData は FeatureCollection。
+    // 各 feature.properties に island_id, island_name, prefecture, municipality, law を持たせる。
+    const statuses = [
+      {name: "未踏", colour: "#9ca3af"},
+      {name: "寄港", colour: "#2563eb"},
+      {name: "訪問", colour: "#facc15"},
+      {name: "宿泊", colour: "#dc2626"},
+      {name: "居住", colour: "#ec4899"}
+    ];
+    const storageKey = "ritou-visit-status-v1";
+    const data = window.islandData || {type: "FeatureCollection", features: []};
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const sharedCode = new URLSearchParams(location.hash.slice(1)).get("s");
+    const sharedValues = sharedCode && /^[0-4]+$/.test(sharedCode) && sharedCode.length === data.features.length ? sharedCode : null;
+    const state = new Map(data.features.map((f, i) => [f.properties.island_id, sharedValues ? Number(sharedValues[i]) : Number(saved[f.properties.island_id] || 0)]));
+    let selectedId = null;
+
+    const map = L.map("map", {zoomControl: true}).setView([35.7, 138.2], 5);
+    L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+      minZoom: 2, maxZoom: 18,
+      attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>国土地理院</a>"
+    }).addTo(map);
+    const prefecture = document.getElementById("prefecture");
+    const selected = document.getElementById("selected");
+    const status = document.getElementById("status");
+    const save = document.getElementById("save");
+    const layerById = new Map();
+    const shareDialog = document.getElementById("share-dialog");
+    let shareMap;
+
+    statuses.forEach((s, i) => status.add(new Option(`${i}点 — ${s.name}`, i)));
+    const prefectureCodes = {
+      "北海道": 1, "青森県": 2, "岩手県": 3, "宮城県": 4, "秋田県": 5, "山形県": 6, "福島県": 7,
+      "茨城県": 8, "栃木県": 9, "群馬県": 10, "埼玉県": 11, "千葉県": 12, "東京都": 13, "神奈川県": 14,
+      "新潟県": 15, "富山県": 16, "石川県": 17, "福井県": 18, "山梨県": 19, "長野県": 20, "岐阜県": 21,
+      "静岡県": 22, "愛知県": 23, "三重県": 24, "滋賀県": 25, "京都府": 26, "大阪府": 27, "兵庫県": 28,
+      "奈良県": 29, "和歌山県": 30, "鳥取県": 31, "島根県": 32, "岡山県": 33, "広島県": 34, "山口県": 35,
+      "徳島県": 36, "香川県": 37, "愛媛県": 38, "高知県": 39, "福岡県": 40, "佐賀県": 41, "長崎県": 42,
+      "熊本県": 43, "大分県": 44, "宮崎県": 45, "鹿児島県": 46, "沖縄県": 47
+    };
+    const japaneseCollator = new Intl.Collator("ja-JP", {usage: "sort", sensitivity: "base"});
+    [...new Set(data.features.map(f => f.properties.prefecture))].sort((a, b) => prefectureCodes[a] - prefectureCodes[b]).forEach(p => prefecture.add(new Option(p, p)));
+
+    function featureStyle(feature) {
+      const value = state.get(feature.properties.island_id) || 0;
+      return {color: "#111827", weight: 3, opacity: 1, fillColor: statuses[value].colour, fillOpacity: .68};
+    }
+    function popup(feature) {
+      const p = feature.properties, value = state.get(p.island_id) || 0;
+      return `<strong>${p.island_name}</strong><br>${p.prefecture} / ${p.municipality}<br>${p.law}<br>状態: ${statuses[value].name}`;
+    }
+    const islands = L.geoJSON(data, {
+      style: featureStyle,
+      onEachFeature(feature, layer) {
+        const id = feature.properties.island_id;
+        layerById.set(id, layer);
+        layer.bindPopup(() => popup(feature));
+        layer.on("click", () => selectIsland(feature));
+      }
+    }).addTo(map);
+    if (data.features.length) map.fitBounds(islands.getBounds(), {padding: [20, 20], maxZoom: 7});
+
+    function selectIsland(feature) {
+      const p = feature.properties;
+      selectedId = p.island_id;
+      selected.textContent = `${p.island_name}（${p.prefecture}・${p.municipality}）`;
+      status.value = state.get(selectedId) || 0;
+      status.disabled = false; save.disabled = false;
+    }
+    function visibleFeatures() {
+      return data.features.filter(f => prefecture.value === "all" || f.properties.prefecture === prefecture.value);
+    }
+    function updateVisibility() {
+      const allowed = new Set(visibleFeatures().map(f => f.properties.island_id));
+      layerById.forEach((layer, id) => allowed.has(id) ? layer.addTo(map) : map.removeLayer(layer));
+      updateSummary();
+    }
+    function updateSummary() {
+      const features = visibleFeatures();
+      const score = features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
+      document.getElementById("score").textContent = `合計 ${score}点 / ${features.length * 4}点`;
+      document.getElementById("progress").textContent = features.length ? `${(100 * score / (4 * features.length)).toFixed(1)}%` : "0.0%";
+      document.getElementById("count").textContent = `対象: ${features.length}島`;
+      document.getElementById("visited").textContent = `訪問以上: ${features.filter(f => (state.get(f.properties.island_id) || 0) >= 2).length}島`;
+    }
+    function shareUrl() {
+      const code = data.features.map(f => state.get(f.properties.island_id) || 0).join("");
+      return `${location.href.split("#")[0]}#s=${code}`;
+    }
+    function shareFeatures() {
+      return data.features.filter(f => (state.get(f.properties.island_id) || 0) >= 1)
+        .sort((a, b) => (state.get(b.properties.island_id) - state.get(a.properties.island_id)) ||
+          (prefectureCodes[a.properties.prefecture] - prefectureCodes[b.properties.prefecture]) ||
+          japaneseCollator.compare(a.properties.island_name, b.properties.island_name));
+    }
+    function showShareDialog() {
+      const shared = shareFeatures();
+      const score = data.features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
+      document.getElementById("share-progress").textContent = `全国合計 ${score}点 / ${data.features.length * 4}点 ／ 全国達成率 ${(100 * score / (4 * data.features.length)).toFixed(1)}% ／ 寄港以上 ${shared.length}島`;
+      const list = document.getElementById("share-list");
+      list.replaceChildren();
+      [4, 3, 2, 1].forEach(value => {
+        const islandsAtStatus = shared.filter(f => state.get(f.properties.island_id) === value);
+        if (!islandsAtStatus.length) return;
+        const heading = document.createElement("h4");
+        heading.textContent = `${statuses[value].name}（${islandsAtStatus.length}島）`;
+        const group = document.createElement("ul");
+        islandsAtStatus.forEach(f => {
+          const item = document.createElement("li");
+          item.textContent = `${f.properties.prefecture}：${f.properties.island_name}`;
+          group.append(item);
+        });
+        list.append(heading, group);
+      });
+      if (!shared.length) list.textContent = "まだ記録がありません";
+      shareDialog.showModal();
+      if (!shareMap) {
+        shareMap = L.map("share-map", {zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false}).setView([35.7, 138.2], 4);
+        L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {minZoom: 2, maxZoom: 18}).addTo(shareMap);
+      }
+      L.geoJSON(data, {style: featureStyle}).addTo(shareMap);
+      shareMap.invalidateSize();
+    }
+    prefecture.addEventListener("change", updateVisibility);
+    save.addEventListener("click", () => {
+      if (!selectedId) return;
+      state.set(selectedId, Number(status.value));
+      localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(state)));
+      layerById.get(selectedId).setStyle(featureStyle(layerById.get(selectedId).feature));
+      layerById.get(selectedId).setPopupContent(popup(layerById.get(selectedId).feature));
+      updateSummary();
+    });
+    document.getElementById("share").addEventListener("click", showShareDialog);
+    document.getElementById("close-share").addEventListener("click", () => shareDialog.close());
+    document.getElementById("copy-url").addEventListener("click", async event => {
+      const url = shareUrl();
+      try { await navigator.clipboard.writeText(url); }
+      catch { window.prompt("このURLをコピーしてください", url); }
+      event.currentTarget.textContent = "コピーしました";
+      setTimeout(() => { event.currentTarget.textContent = "URLをコピーする"; }, 1600);
+    });
+    document.getElementById("share-x").addEventListener("click", () => {
+      const score = data.features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
+      const text = `離島経県値マップ：全国達成率 ${(100 * score / (4 * data.features.length)).toFixed(1)}% ／ 寄港以上 ${shareFeatures().length}島`;
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl())}`, "_blank", "noopener");
+    });
+    updateSummary();
+  </script>
+</body>
+</html>
