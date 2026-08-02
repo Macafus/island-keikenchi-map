@@ -239,7 +239,7 @@
     });
     document.getElementById("share-x").addEventListener("click", () => {
       const score = data.features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
-      const text = `離島経県値マップ：全国達成率 ${(100 * score / (4 * data.features.length)).toFixed(1)}% ／ 寄港以上 ${shareFeatures().length}島`;
+      const text = `離島経県値マップ：全国達成率 ${(100 * score / (4 * data.features.length)).toFixed(1)}% ／ 寄港以上 ${shareFeatures().length}島 #離島経県値マップ`;
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl())}`, "_blank", "noopener");
     });
     updateSummary();
