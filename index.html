@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>離島経県値マップ</title>
+  <title>離島訪問記録マップ</title>
   <meta name="description" content="日本の法定有人離島303島の訪問記録マップ">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="離島経県値マップ">
+  <meta property="og:title" content="離島訪問記録マップ">
   <meta property="og:description" content="日本の法定有人離島303島の訪問記録マップ">
   <meta property="og:image" content="https://macafus.github.io/island-keikenchi-map/og-sado.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="離島経県値マップ">
+  <meta name="twitter:title" content="離島訪問記録マップ">
   <meta name="twitter:description" content="日本の法定有人離島303島の訪問記録マップ">
   <meta name="twitter:image" content="https://macafus.github.io/island-keikenchi-map/og-sado.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -73,7 +73,7 @@
   </style>
 </head>
 <body>
-  <header><h1>離島経県値マップ</h1></header>
+  <header><h1>離島訪問記録マップ</h1></header>
   <main>
     <aside>
       <section class="controls">
@@ -119,7 +119,7 @@
   <dialog id="share-dialog" aria-labelledby="share-title">
     <div class="share-panel">
       <div id="share-card">
-        <div class="share-heading"><h2 id="share-title">離島経県値マップ</h2><button class="close" id="close-share" type="button">閉じる</button></div>
+        <div class="share-heading"><h2 id="share-title">離島訪問記録マップ</h2><button class="close" id="close-share" type="button">閉じる</button></div>
         <div id="share-progress"></div>
         <div id="share-map" aria-label="共有する地図"></div>
       </div>
@@ -280,7 +280,7 @@
     document.getElementById("share-x").addEventListener("click", () => {
       const score = data.features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
       const visited = data.features.filter(f => (state.get(f.properties.island_id) || 0) >= 2).length;
-      const text = `離島経県値は、${score}点でした！(訪問済み離島: ${visited}島)\n#離島経県値マップ\n${shareUrl()}`;
+      const text = `離島訪問記録は、${score}点でした！(訪問済み離島: ${visited}島)\n#離島訪問記録マップ\n${shareUrl()}`;
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener");
     });
     updateSummary();
