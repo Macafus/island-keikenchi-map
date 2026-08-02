@@ -39,30 +39,45 @@
     .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
     #share-x { background: #111827; }
     #copy-url { background: #2563eb; }
-    @media (max-width: 720px) { main { display: block; height: auto; } aside { border-right: 0; border-bottom: 1px solid #d1d5db; } #map { height: 65vh; } }
+    @media (max-width: 720px) {
+      main { display: flex; flex-direction: column; height: auto; }
+      aside { display: contents; }
+      .score-panel, .legend-panel, .controls, .definition, .source-note, #share { box-sizing: border-box; width: 100%; }
+      .score-panel { order: 1; margin: 0; padding: 16px; background: #fff; border-top: 1px solid #d1d5db; }
+      .legend-panel { order: 2; margin: 0; padding: 0 16px 16px; background: #fff; border-top: 0; }
+      #share { order: 3; margin: 0; border-radius: 0; padding: 13px 16px; }
+      .controls { order: 4; padding: 16px; background: #fff; }
+      .controls label:first-child { margin-top: 0; }
+      .controls select { background: #fff; color: #1f2937; border: 1px solid #94a3b8; }
+      #map { order: 5; height: 65vh; min-height: 420px; }
+      .definition { order: 6; margin: 0; padding: 16px; background: #fff; }
+      .source-note { order: 7; margin: 0; padding: 0 16px 16px; background: #fff; }
+    }
   </style>
 </head>
 <body>
   <header><h1>離島経県値マップ</h1></header>
   <main>
     <aside>
-      <label for="prefecture">集計・表示する都道府県</label>
-      <select id="prefecture"><option value="all">全国</option></select>
+      <section class="controls">
+        <label for="prefecture">集計・表示する都道府県</label>
+        <select id="prefecture"><option value="all">全国</option></select>
 
-      <label>選択中の島</label>
-      <div class="selected" id="selected">島の輪郭をクリックしてください</div>
+        <label>選択中の島</label>
+        <div class="selected" id="selected">島の輪郭をクリックしてください</div>
 
-      <label for="status">記録</label>
-      <select id="status" disabled></select>
-      <button id="save" type="button" disabled>この記録を保存</button>
+        <label for="status">記録</label>
+        <select id="status" disabled></select>
+        <button id="save" type="button" disabled>この記録を保存</button>
+      </section>
 
-      <section class="summary">
+      <section class="summary score-panel">
         <div>点数の合計</div><div id="score">合計 0点 / 0点</div>
         <div>達成率</div><strong id="progress">0.0%</strong>
         <div id="count"></div><div id="visited"></div>
       </section>
 
-      <section class="summary" aria-label="状態の凡例">
+      <section class="summary legend-panel" aria-label="状態の凡例">
         <div class="legend"><span class="swatch" style="background:#9ca3af"></span><span>未踏（0点）</span></div>
         <div class="legend"><span class="swatch" style="background:#2563eb"></span><span>寄港（1点）</span></div>
         <div class="legend"><span class="swatch" style="background:#facc15"></span><span>訪問（2点）</span></div>
@@ -70,8 +85,8 @@
         <div class="legend"><span class="swatch" style="background:#ec4899"></span><span>居住（4点）</span></div>
       </section>
       <button id="share" type="button">地図をシェアする</button>
-      <p class="note">背景地図: 国土地理院 地理院タイル。状態はこのブラウザ内に保存されます。</p>
-      <section class="summary note" aria-label="有人離島の定義">
+      <p class="note source-note">背景地図: 国土地理院 地理院タイル。状態はこのブラウザ内に保存されます。</p>
+      <section class="summary note definition" aria-label="有人離島の定義">
         <strong>有人離島の定義</strong><br>
         離島振興法（255島）、小笠原諸島振興開発特別措置法（2島）、奄美群島振興開発特別措置法（8島）、沖縄振興特別措置法（38島）で対象とされる有人離島の合算（計303島）。
       </section>
