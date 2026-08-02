@@ -239,8 +239,9 @@
     });
     document.getElementById("share-x").addEventListener("click", () => {
       const score = data.features.reduce((sum, f) => sum + (state.get(f.properties.island_id) || 0), 0);
-      const text = `離島経県値マップ：全国達成率 ${(100 * score / (4 * data.features.length)).toFixed(1)}% ／ 寄港以上 ${shareFeatures().length}島 #離島経県値マップ`;
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl())}`, "_blank", "noopener");
+      const visited = data.features.filter(f => (state.get(f.properties.island_id) || 0) >= 2).length;
+      const text = `離島経県値は、${score}点でした！(訪問済み離島: ${visited}島)\n#離島経県値マップ\n${shareUrl()}`;
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener");
     });
     updateSummary();
   </script>
